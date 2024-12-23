@@ -14,11 +14,13 @@ import (
 )
 
 func IndexPosts(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	var valid bool
-	var username string
-	_, username, valid = models.ValidSession(r, db)
+	_, username, valid := models.ValidSession(r, db)
 
-	if r.URL.Path != "/" || r.Method != http.MethodGet {
+	if r.Method != http.MethodGet {
+		utils.RenderError(db, w, r, http.StatusMethodNotAllowed, valid, username)
+		return
+	}
+	if r.URL.Path != "/" {
 		utils.RenderError(db, w, r, http.StatusNotFound, valid, username)
 		return
 	}
@@ -39,7 +41,7 @@ func IndexPosts(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 	if posts == nil && page > 0 {
-		utils.RenderError(db, w, r, 404, valid, username)
+		utils.RenderError(db, w, r, http.StatusBadRequest, valid, username)
 		return
 	}
 
@@ -51,9 +53,8 @@ func IndexPosts(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 }
 
 func IndexPostsByCategory(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	var valid bool
-	var username string
-	_, username, valid = models.ValidSession(r, db)
+
+	_, username, valid := models.ValidSession(r, db)
 
 	if r.Method != http.MethodGet {
 		utils.RenderError(db, w, r, http.StatusMethodNotAllowed, valid, username)
@@ -66,11 +67,11 @@ func IndexPostsByCategory(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 
-	if e := models.CheckCategories(db,[]int{id}); e!= nil {
+	if e := models.CheckCategories(db, []int{id}); e != nil {
 		utils.RenderError(db, w, r, 404, valid, username)
 		return
 	}
-	
+
 	pid := r.FormValue("PageID")
 	page, _ := strconv.Atoi(pid)
 	page = (page - 1) * 10
@@ -98,14 +99,14 @@ func IndexPostsByCategory(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 }
 
 func ShowPost(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	var valid bool
-	var username string
-	_, username, valid = models.ValidSession(r, db)
+
+	_, username, valid := models.ValidSession(r, db)
 
 	if r.Method != http.MethodGet {
 		utils.RenderError(db, w, r, http.StatusMethodNotAllowed, valid, username)
 		return
 	}
+
 	postID, err := strconv.Atoi(r.PathValue("id"))
 	if err != nil {
 		utils.RenderError(db, w, r, http.StatusBadRequest, valid, username)
@@ -126,18 +127,18 @@ func ShowPost(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 }
 
 func GetPostCreationForm(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	var valid bool
-	var username string
-
-	if _, username, valid = models.ValidSession(r, db); !valid {
-		http.Redirect(w, r, "/login", http.StatusFound)
-		return
-	}
+	_, username, valid := models.ValidSession(r, db)
 
 	if r.Method != http.MethodGet {
 		utils.RenderError(db, w, r, http.StatusMethodNotAllowed, valid, username)
 		return
 	}
+
+	if !valid {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+
 
 	if err := utils.RenderTemplate(db, w, r, "post-form", http.StatusOK, nil, valid, username); err != nil {
 		log.Println("Error rendering template:", err)
@@ -147,16 +148,14 @@ func GetPostCreationForm(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 }
 
 func CreatePost(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	var user_id int
-	var valid bool
-
-	if user_id, _, valid = models.ValidSession(r, db); !valid {
-		w.WriteHeader(401)
-		return
-	}
+	user_id, username, valid := models.ValidSession(r, db)
 
 	if r.Method != http.MethodPost {
-		w.WriteHeader(405)
+		utils.RenderError(db, w, r, http.StatusMethodNotAllowed, valid, username)
+		return
+	}
+	if !valid {
+		w.WriteHeader(401)
 		return
 	}
 
@@ -215,18 +214,18 @@ func CreatePost(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 }
 
 func MyCreatedPosts(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	var valid bool
-	var username string
-	var user_id int
-	if user_id, username, valid = models.ValidSession(r, db); !valid {
-		http.Redirect(w, r, "/login", http.StatusFound)
-		return
-	}
+	user_id, username, valid := models.ValidSession(r, db)
 
 	if r.Method != http.MethodGet {
 		utils.RenderError(db, w, r, http.StatusNotFound, valid, username)
 		return
 	}
+
+	if !valid {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+
 	id := r.FormValue("PageID")
 	page, er := strconv.Atoi(id)
 	if er != nil && id != "" {
@@ -244,7 +243,7 @@ func MyCreatedPosts(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 	if posts == nil && page > 0 {
-		utils.RenderError(db, w, r, 404, valid, username)
+		utils.RenderError(db, w, r, http.StatusBadRequest, valid, username)
 		return
 	}
 
@@ -256,18 +255,19 @@ func MyCreatedPosts(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 }
 
 func MyLikedPosts(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	var valid bool
-	var username string
-	var user_id int
-	if user_id, username, valid = models.ValidSession(r, db); !valid {
-		http.Redirect(w, r, "/login", http.StatusFound)
-		return
-	}
-
+	
+	user_id, username, valid := models.ValidSession(r, db)
+	
 	if r.Method != http.MethodGet {
 		utils.RenderError(db, w, r, http.StatusNotFound, valid, username)
 		return
 	}
+
+	if !valid {
+		http.Redirect(w, r, "/login", http.StatusFound)
+		return
+	}
+
 	id := r.FormValue("PageID")
 	page, er := strconv.Atoi(id)
 	if er != nil && id != "" {
@@ -298,7 +298,7 @@ func MyLikedPosts(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 
 func ReactToPost(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		utils.RenderError(db, w, r, http.StatusMethodNotAllowed, false, "")
 		return
 	}
 

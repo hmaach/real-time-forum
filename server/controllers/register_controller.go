@@ -11,14 +11,14 @@ import (
 )
 
 func GetRegisterPage(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	var valid bool
-	if _, _, valid = models.ValidSession(r, db); valid {
-		http.Redirect(w, r, "/", http.StatusFound)
+	if r.Method != http.MethodGet {
+		utils.RenderError(db, w, r, http.StatusMethodNotAllowed, false, "")
 		return
 	}
 
-	if r.Method != http.MethodGet {
-		utils.RenderError(db, w, r, http.StatusMethodNotAllowed, false, "")
+	var valid bool
+	if _, _, valid = models.ValidSession(r, db); valid {
+		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
 
@@ -31,16 +31,17 @@ func GetRegisterPage(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 }
 
 func Signup(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+	if r.Method != http.MethodPost {
+		utils.RenderError(db, w, r, http.StatusMethodNotAllowed, false, "")
+		return
+	}
+
 	var valid bool
 	if _, _, valid = models.ValidSession(r, db); valid {
 		w.WriteHeader(302)
 		return
 	}
 
-	if r.Method != http.MethodPost {
-		w.WriteHeader(405)
-		return
-	}
 	if err := r.ParseForm(); err != nil {
 		w.WriteHeader(400)
 		return
@@ -50,8 +51,8 @@ func Signup(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	username := r.FormValue("username")
 	password := r.FormValue("password")
 	passwordConfirmation := r.FormValue("password-confirmation")
-
-	if len(strings.TrimSpace(username)) < 4 || len(strings.TrimSpace(password)) < 6 || email == "" || password != passwordConfirmation {
+	email = strings.ToLower(strings.TrimSpace(email))
+	if len(strings.TrimSpace(username)) < 4 || len(strings.TrimSpace(password)) < 6 || !utils.IsValidEmail(email) || password != passwordConfirmation {
 		w.WriteHeader(400)
 		return
 	}

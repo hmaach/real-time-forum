@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"forum/server/models"
@@ -13,15 +14,14 @@ import (
 )
 
 func GetLoginPage(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+	
 	var valid bool
-
-	if _, _, valid = models.ValidSession(r, db); valid {
-		http.Redirect(w, r, "/", http.StatusFound)
-		return
-	}
-
 	if r.Method != http.MethodGet {
 		utils.RenderError(db, w, r, http.StatusMethodNotAllowed, false, "")
+		return
+	}
+	if _, _, valid = models.ValidSession(r, db); valid {
+		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
 
@@ -34,15 +34,15 @@ func GetLoginPage(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 }
 
 func Signin(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+	
 	var valid bool
-
-	if _, _, valid = models.ValidSession(r, db); valid {
-		w.WriteHeader(302)
+	if r.Method != http.MethodPost {
+		utils.RenderError(db, w, r, http.StatusMethodNotAllowed, false, "")
 		return
 	}
-
-	if r.Method != http.MethodPost {
-		w.WriteHeader(405)
+	
+	if _, _, valid = models.ValidSession(r, db); valid {
+		w.WriteHeader(302)
 		return
 	}
 
@@ -54,7 +54,7 @@ func Signin(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	username := r.FormValue("username")
 	password := r.FormValue("password")
 
-	if len(username) < 4 || len(password) < 6 {
+	if len(strings.TrimSpace(username)) < 4 || len(strings.TrimSpace(password)) < 6 {
 		w.WriteHeader(400)
 		return
 	}

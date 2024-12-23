@@ -10,7 +10,7 @@ import (
 func Routes(db *sql.DB) http.Handler {
 	mux := http.NewServeMux()
 
-	// serve static files
+	// Serve static files
 	mux.HandleFunc("/assets/", controllers.ServeStaticFiles)
 
 	// routes to get pages

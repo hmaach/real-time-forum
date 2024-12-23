@@ -9,19 +9,21 @@ import (
 	"strings"
 
 	"forum/server/models"
+	"forum/server/utils"
 )
 
 func CreateComment(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	// Validate session
 	userID, username, valid := models.ValidSession(r, db)
-	if !valid {
-		w.WriteHeader(http.StatusUnauthorized)
-		return
-	}
 
 	// Validate method
 	if r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusMethodNotAllowed)
+		utils.RenderError(db, w, r, http.StatusMethodNotAllowed, valid, username)
+		return
+	}
+
+	if !valid {
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
@@ -34,7 +36,7 @@ func CreateComment(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	content := html.EscapeString(strings.TrimSpace(r.FormValue("comment")))
 	postIDStr := r.FormValue("postid")
 	postID, err := strconv.Atoi(postIDStr)
-	if err != nil || content == "" {
+	if err != nil || strings.TrimSpace(content) == "" || len(strings.TrimSpace(content)) > 500 {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -73,15 +75,14 @@ func CreateComment(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 }
 
 func ReactToComment(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+	user_id, username, valid := models.ValidSession(r, db)
+
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		utils.RenderError(db, w, r, http.StatusMethodNotAllowed, valid, username)
 		return
 	}
 
-	var user_id int
-	var valid bool
-
-	if user_id, _, valid = models.ValidSession(r, db); !valid {
+	if !valid {
 		w.WriteHeader(401)
 		return
 	}
