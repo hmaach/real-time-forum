@@ -53,7 +53,6 @@ func IndexPosts(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 }
 
 func IndexPostsByCategory(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-
 	_, username, valid := models.ValidSession(r, db)
 
 	if r.Method != http.MethodGet {
@@ -99,7 +98,6 @@ func IndexPostsByCategory(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 }
 
 func ShowPost(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-
 	_, username, valid := models.ValidSession(r, db)
 
 	if r.Method != http.MethodGet {
@@ -138,7 +136,6 @@ func GetPostCreationForm(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		http.Redirect(w, r, "/login", http.StatusFound)
 		return
 	}
-
 
 	if err := utils.RenderTemplate(db, w, r, "post-form", http.StatusOK, nil, valid, username); err != nil {
 		log.Println("Error rendering template:", err)
@@ -217,7 +214,7 @@ func MyCreatedPosts(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	user_id, username, valid := models.ValidSession(r, db)
 
 	if r.Method != http.MethodGet {
-		utils.RenderError(db, w, r, http.StatusNotFound, valid, username)
+		utils.RenderError(db, w, r, http.StatusMethodNotAllowed, valid, username)
 		return
 	}
 
@@ -255,9 +252,8 @@ func MyCreatedPosts(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 }
 
 func MyLikedPosts(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	
 	user_id, username, valid := models.ValidSession(r, db)
-	
+
 	if r.Method != http.MethodGet {
 		utils.RenderError(db, w, r, http.StatusNotFound, valid, username)
 		return
