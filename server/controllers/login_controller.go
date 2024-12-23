@@ -98,9 +98,14 @@ func Signin(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 }
 
 func Logout(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	
-	
-	if userID, _, valid := models.ValidSession(r, db); valid {
+	userID, username, valid := models.ValidSession(r, db)
+
+	if r.Method != http.MethodPost {
+		utils.RenderError(db, w, r, http.StatusMethodNotAllowed, valid, username)
+		return
+	}
+
+	if valid {
 		// Use the new model function
 		err := models.DeleteUserSession(db, userID)
 		if err != nil {
