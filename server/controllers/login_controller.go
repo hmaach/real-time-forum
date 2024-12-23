@@ -14,12 +14,12 @@ import (
 )
 
 func GetLoginPage(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	
-	var valid bool
 	if r.Method != http.MethodGet {
 		utils.RenderError(db, w, r, http.StatusMethodNotAllowed, false, "")
 		return
 	}
+
+	var valid bool
 	if _, _, valid = models.ValidSession(r, db); valid {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
@@ -34,13 +34,12 @@ func GetLoginPage(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 }
 
 func Signin(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	
-	var valid bool
 	if r.Method != http.MethodPost {
 		utils.RenderError(db, w, r, http.StatusMethodNotAllowed, false, "")
 		return
 	}
-	
+
+	var valid bool
 	if _, _, valid = models.ValidSession(r, db); valid {
 		w.WriteHeader(302)
 		return
@@ -99,6 +98,8 @@ func Signin(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 }
 
 func Logout(w http.ResponseWriter, r *http.Request, db *sql.DB) {
+	
+	
 	if userID, _, valid := models.ValidSession(r, db); valid {
 		// Use the new model function
 		err := models.DeleteUserSession(db, userID)

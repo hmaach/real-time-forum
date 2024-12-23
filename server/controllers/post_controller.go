@@ -216,8 +216,8 @@ func CreatePost(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 func MyCreatedPosts(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	user_id, username, valid := models.ValidSession(r, db)
 
-	if r.Method != http.MethodGet {
-		utils.RenderError(db, w, r, http.StatusNotFound, valid, username)
+	if r.Method != http.MethodPost {
+		utils.RenderError(db, w, r, http.StatusMethodNotAllowed, valid, username)
 		return
 	}
 
