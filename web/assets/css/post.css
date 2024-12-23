@@ -86,13 +86,19 @@
     font-size: 1rem;
     font-weight: 500;
     line-height: 1.7;
-    /* width: 95%; */
+    max-width: 95%;
 }
 
 .post-title {
     font-size: 1.5rem;
     font-weight: 600;
     color: black;
+    text-overflow: ellipsis;
+    border: red solid 1px;
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+
 }
 
 .post-content {
@@ -103,14 +109,15 @@
 }
 
 #post-content-home {
-    overflow: hidden;
-    text-overflow: ellipsis;
+    max-width: 100%;
     display: -webkit-box;
-    -webkit-line-clamp: 2;
-    /* number of lines to show */
-    line-clamp: 2;
+    -webkit-line-clamp: 5;
+    /* Limit to 5 lines */
     -webkit-box-orient: vertical;
+    overflow: hidden;
 }
+
+
 
 .post-categories {
     display: flex;
@@ -330,7 +337,7 @@
     text-wrap: wrap;
 }
 
-.max-char{
+.max-char {
     font-size: 0.8rem;
     opacity: 0.7;
     margin-left: 5px;
@@ -360,7 +367,8 @@
     flex-direction: column;
     gap: 20px;
     margin: 20px;
-    max-width: 70%;
+    max-width: 90%;
+    overflow: hidden;
 }
 
 .comment-add {
@@ -450,6 +458,11 @@
 .comment-content {
     font-size: 0.9rem;
     font-weight: 500;
+}
+
+.post-title,
+.comment-content {
+    word-wrap: break-word;
 }
 
 .comment-footer {
