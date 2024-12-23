@@ -74,7 +74,7 @@ func CreateComment(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 
 func ReactToComment(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		w.WriteHeader(405)
 		return
 	}
 
