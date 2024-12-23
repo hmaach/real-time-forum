@@ -94,7 +94,7 @@
     font-weight: 600;
     color: black;
     text-overflow: ellipsis;
-    border: red solid 1px;
+    /* border: red solid 1px; */
     display: inline-block;
     max-width: 100%;
     overflow: hidden;
@@ -112,7 +112,6 @@
     max-width: 100%;
     display: -webkit-box;
     -webkit-line-clamp: 5;
-    /* Limit to 5 lines */
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
