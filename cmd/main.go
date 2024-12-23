@@ -26,22 +26,23 @@ func main() {
 	// Connect to the database
 	db, err := config.Connect()
 	if err != nil {
-		log.Fatal("Database connection error:", err)
+		log.Println("Database connection error:", err)
 	}
+	defer db.Close()
 
 	// Handle database setup based on environment
 	if isDocker {
 		// Create the database schema and demo data
 		err := config.CreateDemoData(db)
 		if err != nil {
-			log.Fatalf("Error creating the database schema and demo data: %v", err)
+			log.Printf("Error creating the database schema and demo data: %v\n", err)
 		}
 		log.Println("Database setup complete.")
 	} else {
 		// Create only the database schema
 		err := config.CreateTables(db)
 		if err != nil {
-			log.Fatalf("Error creating the database schema: %v", err)
+			log.Printf("Error creating the database schema: %v\n", err)
 		}
 	}
 

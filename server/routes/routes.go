@@ -67,9 +67,6 @@ func Routes(db *sql.DB) http.Handler {
 		controllers.Logout(w, r, db)
 	})
 
-
-
-
 	mux.HandleFunc("/register", func(w http.ResponseWriter, r *http.Request) {
 		controllers.GetRegisterPage(w, r, db)
 	})
