@@ -11,7 +11,7 @@
             <label>Categories*</label>
             <div class="create-post-categories">
                 <div class="selected-categories"></div>
-                <select id="categories-select" onchange="e => selectCategory(e)">
+                <select id="categories-select">
                     <option selected disabled>Select a category</option>
                     {{range .Categories}}
                     <option value='{"id":"{{.ID}}","label":"{{.Label}}"}'>{{.Label}}</option>

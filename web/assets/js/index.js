@@ -89,6 +89,23 @@ function commentreaction(commentid, reaction) {
 
 function addcomm(postId) {
     const content = document.getElementById("comment-content");
+    const logerror = document.getElementById("errorlogin" + postId)
+    if (!content.value) {
+        logerror.innerText = 'Please fill in Comment field.';
+        setTimeout(() => {
+            logerror.innerText = '';
+        }, 3000);
+        return;
+    }
+
+    if (content.value.length > 500) {
+        logerror.innerText = 'Comment is too long. Please keep it under 500 characters.';
+        setTimeout(() => {
+            logerror.innerText = '';
+        }, 3000);
+        return;
+    }
+
     const xhr = new XMLHttpRequest();
     xhr.open("POST", "/post/addcommentREQ", true);
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -212,9 +229,9 @@ function CreatPost() {
     const content = document.querySelector(".content")
     const categories = document.querySelector(".selected-categories")
     const logerror = document.querySelector(".errorarea")
-    
+
     if (!title.value || !content.value || categories.childElementCount === 0) {
-        logerror.innerText = 'Please fill in all fields and select at least one category.'; 
+        logerror.innerText = 'Please fill in all fields and select at least one category.';
         setTimeout(() => {
             logerror.innerText = '';
         }, 3000);

@@ -34,7 +34,7 @@ func CreateComment(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	content := html.EscapeString(strings.TrimSpace(r.FormValue("comment")))
 	postIDStr := r.FormValue("postid")
 	postID, err := strconv.Atoi(postIDStr)
-	if err != nil || content == "" {
+	if err != nil || strings.TrimSpace(content) == "" || len(strings.TrimSpace(content)) > 500 {
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
