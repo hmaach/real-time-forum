@@ -57,9 +57,13 @@ func RenderTemplate(db *sql.DB, w http.ResponseWriter, r *http.Request, tmpl str
 	if err != nil {
 		return err
 	}
-	categories, err := models.FetchCategories(db)
-	if err != nil {
-		categories = nil
+	// Fetch categories for the navigation bar
+	var categories []models.Category
+	if db != nil {
+		categories, err = models.FetchCategories(db)
+		if err != nil {
+			categories = nil
+		}
 	}
 
 	globalData := GlobalData{
