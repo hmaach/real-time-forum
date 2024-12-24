@@ -149,7 +149,6 @@ header:first-child {
 
 .logout-link {
     text-decoration: none;
-    /* background-color: ; */
     padding: 8px 15px;
     color: rgb(187, 0, 0);
     border: solid 1px rgb(187, 0, 0);
@@ -158,6 +157,7 @@ header:first-child {
     font-size: 1rem;
     font-weight: 700;
     transition: var(--transition);
+    cursor: pointer;
 }
 
 .logout-link i {

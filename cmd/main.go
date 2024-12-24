@@ -30,20 +30,9 @@ func main() {
 	}
 	defer db.Close()
 
-	// Handle database setup based on environment
-	if isDocker {
-		// Create the database schema and demo data
-		err := config.CreateDemoData(db)
-		if err != nil {
-			log.Printf("Error creating the database schema and demo data: %v\n", err)
-		}
-		log.Println("Database setup complete.")
-	} else {
-		// Create only the database schema
-		err := config.CreateTables(db)
-		if err != nil {
-			log.Printf("Error creating the database schema: %v\n", err)
-		}
+	err = config.CreateTables(db)
+	if err != nil {
+		log.Printf("Error creating the database schema: %v\n", err)
 	}
 
 	// Start the HTTP server
