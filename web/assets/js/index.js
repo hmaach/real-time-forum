@@ -19,7 +19,8 @@ function throttle(fn, delay) {
 const addcomment = throttle(addcomm, 5000)
 
 function postreaction(postId, reaction) {
-    document.getElementById("errorlogin" + postId).innerText = ``
+    const logerror = document.getElementById("errorlogin" + postId)
+    logerror.innerText = ``
     const xhr = new XMLHttpRequest();
     xhr.open("POST", "/post/postreaction", true);
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -32,27 +33,19 @@ function postreaction(postId, reaction) {
                 document.getElementById("dislikescount" + postId).innerHTML = `<i
                     class="fa-regular fa-thumbs-down"></i>${response.dislikesCount}`;
             } else if (xhr.status === 401) {
-                document.getElementById("errorlogin" + postId).innerText = `You must login first!`
-                setTimeout(() => {
-                    document.getElementById("errorlogin" + postId).innerText = ``
-                }, 1000);
+                writeError(logerror,"red",`You must login first!`,1000)
             } else if (xhr.status === 400) {
-                document.getElementById("errorlogin" + postId).innerText = `Bad request!`
-                setTimeout(() => {
-                    document.getElementById("errorlogin" + postId).innerText = ``
-                }, 1000);
+                writeError(logerror,"red",`Bad request!`,1000)
             } else if (xhr.status === 500) {
-                document.getElementById("errorlogin" + postId).innerText = `Try again later!`
-                setTimeout(() => {
-                    document.getElementById("errorlogin" + postId).innerText = ``
-                }, 1000);
+                writeError(logerror,"red",`Try again later!`,1000)
             }
         };
     }
     xhr.send(`reaction=${reaction}&post_id=${postId}`);
 }
 function commentreaction(commentid, reaction) {
-    document.getElementById("commenterrorlogin" + commentid).innerText = ``
+    const logerror = document.getElementById("commenterrorlogin" + commentid)
+    logerror.innerText = ``
     const xhr = new XMLHttpRequest();
     xhr.open("POST", "/post/commentreaction", true);
     xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -65,21 +58,13 @@ function commentreaction(commentid, reaction) {
                 document.getElementById("commentdislikescount" + commentid).innerHTML = `<i
                     class="fa-regular fa-thumbs-down"></i>${response.commentdislikesCount}`;
             } else if (xhr.status === 401) {
-                document.getElementById("commenterrorlogin" + commentid).innerText = `You must login first!`
-                setTimeout(() => {
-                    document.getElementById("commenterrorlogin" + commentid).innerText = ``
-                }, 1000);
-
+                writeError(logerror,"red",`You must login first!`,1000)
+                
             } else if (xhr.status === 400) {
-                document.getElementById("commenterrorlogin" + commentid).innerText = `bad request!`
-                setTimeout(() => {
-                    document.getElementById("commenterrorlogin" + commentid).innerText = ``
-                }, 1000);
+                writeError(logerror,"red",`bad request!`,1000)
+            
             } else if (xhr.status === 500) {
-                document.getElementById("commenterrorlogin" + commentid).innerText = `Try again later!`
-                setTimeout(() => {
-                    document.getElementById("commenterrorlogin" + commentid).innerText = ``
-                }, 1000);
+                writeError(logerror,"red",`Try again later!`,1000)
             }
         };
     }
@@ -91,18 +76,12 @@ function addcomm(postId) {
     const content = document.getElementById("comment-content");
     const logerror = document.getElementById("errorlogin" + postId)
     if (!content.value) {
-        logerror.innerText = 'Please fill in Comment field.';
-        setTimeout(() => {
-            logerror.innerText = '';
-        }, 3000);
+        writeError(logerror,"red",'Please fill in Comment field.',3000)
         return;
     }
 
     if (content.value.length > 500) {
-        logerror.innerText = 'Comment is too long. Please keep it under 500 characters.';
-        setTimeout(() => {
-            logerror.innerText = '';
-        }, 3000);
+        writeError(logerror,"red",'Comment is too long. Please keep it under 500 characters.',3000)
         return;
     }
 
@@ -137,20 +116,12 @@ function addcomm(postId) {
                 document.getElementsByClassName("post-comments")[0].innerHTML = `<i class="fa-regular fa-comment"></i>` + response.commentscount
                 content.value = ""
             } else if (xhr.status === 400) {
-                document.getElementById("errorlogin" + postId).innerText = `Invalid comment!`
-                setTimeout(() => {
-                    document.getElementById("errorlogin" + postId).innerText = ``
-                }, 1000);
+                writeError(logerror,"red",`Invalid comment!`,1000)
             } else if (xhr.status === 401) {
-                document.getElementById("errorlogin" + postId).innerText = `You must login first!`
-                setTimeout(() => {
-                    document.getElementById("errorlogin" + postId).innerText = ``
-                }, 1000);
+                writeError(logerror,"red",`You must login first!`,1000)
             } else {
-                document.getElementById("errorlogin" + postId).innerText = `Cannot add comment now, try again later!`
-                setTimeout(() => {
-                    document.getElementById("errorlogin" + postId).innerText = ``
-                }, 1000);
+                writeError(logerror,"red",`Cannot add comment now, try again later!`,1000)
+
             }
         };
     }
@@ -230,27 +201,18 @@ function CreatPost() {
     const categories = document.querySelector(".selected-categories")
     const logerror = document.querySelector(".errorarea")
 
-    if (!title.value || !content.value || categories.childElementCount === 0) {
-        logerror.innerText = 'Please fill in all fields and select at least one category.';
-        setTimeout(() => {
-            logerror.innerText = '';
-        }, 3000);
+    if (title.value.trim() == "" || content.value.trim() == "" || categories.childElementCount === 0) {
+        writeError(logerror,"red",'No empty entries allowed!',3000)
         return;
     }
 
     if (title.value.length > 100) {
-        logerror.innerText = 'Title is too long. Please keep it under 100 characters.';
-        setTimeout(() => {
-            logerror.innerText = '';
-        }, 3000);
+        writeError(logerror,"red",'Title is too long. Please keep it under 100 characters.',3000)
         return;
     }
 
     if (content.value.length > 3000) {
-        logerror.innerText = 'Content is too long. Please keep it under 3000 characters.';
-        setTimeout(() => {
-            logerror.innerText = '';
-        }, 3000);
+        writeError(logerror,"red",'Content is too long. Please keep it under 3000 characters.',3000)
         return;
     }
 
@@ -274,23 +236,21 @@ function CreatPost() {
                 btn.style.cursor = "not-allowed"
 
 
-                logerror.innerText = 'Post created successfully, redirect to home page in 2s ...'
-                logerror.style.color = "green"
+                writeError(logerror,"green",'Post created successfully, redirect to home page in 2s ...',2000)
                 setTimeout(() => {
                     window.location.href = '/'
                 }, 2000)
 
             } else if (xml.status === 401) {
-                logerror.innerText = 'You are loged out, redirect to login page in 2s...'
+                writeError(logerror,"red",'You are loged out, redirect to login page in 2s...',2000)
                 setTimeout(() => {
                     window.location.href = '/login'
                 }, 2000)
 
+            } else if (xml.status === 400) {
+                writeError(logerror,"red",'Bad request!',1500)
             } else {
-                logerror.innerText = 'Error: check your entries and try again!'
-                setTimeout(() => {
-                    logerror.innerText = ''
-                }, 1500)
+                writeError(logerror,"red",'Error: check your entries and try again!',1500)
             }
         }
     }
@@ -305,6 +265,23 @@ function register() {
     const username = document.querySelector("#username")
     const password = document.querySelector("#password")
     const passConfirm = document.querySelector("#password-confirmation")
+    const logerror = document.querySelector(".errorarea")
+
+    if (username.value.length < 4 || username.value.includes(" ")){
+        writeError(logerror,"red","Username too short! or have space",1500)
+        return
+    }
+
+    if (password.value.length < 6){
+        writeError(logerror,"red","password too short!",1500)
+        return
+    }
+
+    if (password.value != passConfirm.value){
+        writeError(logerror,"red","password and password confirmation are not identical",1500)
+        return
+    }
+
 
     const xml = new XMLHttpRequest();
     xml.open("POST", "/signup", true)
@@ -312,39 +289,26 @@ function register() {
 
     xml.onreadystatechange = function () {
         if (xml.readyState === 4) {
-            const logerror = document.querySelector(".errorarea")
             if (xml.status === 200) {
-                logerror.innerText = `User ${username.value} created successfully, redirect to login page in 2s ...`
-                logerror.style.color = "green"
+                writeError(logerror,"green",`User ${username.value} created successfully, redirect to login page in 2s ...`,2000)
                 setTimeout(() => {
                     window.location.href = '/login'
                 }, 2000)
 
             } else if (xml.status === 302) {
-                logerror.innerText = 'You are already loged in, redirect to home page in 2s...'
-                logerror.style.color = "green"
+                writeError(logerror,"green",'You are already loged in, redirect to home page in 2s...',2000)
                 setTimeout(() => {
                     window.location.href = '/'
                 }, 2000)
 
             } else if (xml.status === 400) {
-                logerror.innerText = 'Error: verify your data and try again!'
-                logerror.style.color = "red"
-                setTimeout(() => {
-                    logerror.innerText = ''
-                }, 1500)
+                writeError(logerror,"red",'Error: verify your data and try again!',1500)
+    
             } else if (xml.status === 304) {
-                logerror.innerText = 'User already exists!'
-                logerror.style.color = "red"
-                setTimeout(() => {
-                    logerror.innerText = ''
-                }, 1500)
+                writeError(logerror,"red",'User already exists!',1500)
+    
             } else {
-                logerror.innerText = 'Cannot create user, try again later!'
-                logerror.style.color = "red"
-                setTimeout(() => {
-                    logerror.innerText = ''
-                }, 1500)
+                writeError(logerror,"red",'Cannot create user, try again later!',1500)
             }
         }
     }
@@ -360,6 +324,17 @@ function register() {
 function login() {
     const username = document.querySelector("#username")
     const password = document.querySelector("#password")
+    const logerror = document.querySelector(".errorarea")
+
+    if (username.value.length < 4) {
+        writeError(logerror,"red","Username too short!",1500)
+        return
+    }
+    if (password.value.length < 6) {
+        writeError(logerror,"red","Password too short!",1500)
+        return
+    }
+
 
     const xml = new XMLHttpRequest();
     xml.open("POST", "/signin", true)
@@ -367,45 +342,25 @@ function login() {
 
     xml.onreadystatechange = function () {
         if (xml.readyState === 4) {
-            const logerror = document.querySelector(".errorarea")
             if (xml.status === 200) {
-                logerror.innerText = `Login in successfully, redirect to home page in 2s ...`
-                logerror.style.color = "green"
+                writeError(logerror,"green",`Login in successfully, redirect to home page in 2s ...`,2000)
                 setTimeout(() => {
                     window.location.href = '/'
                 }, 2000)
-
             } else if (xml.status === 302) {
-                logerror.innerText = 'You are already loged in, redirect to home page in 2s...'
-                logerror.style.color = "green"
+                writeError(logerror,"green",'You are already loged in, redirect to home page in 2s...',2000)
                 setTimeout(() => {
                     window.location.href = '/'
                 }, 2000)
 
             } else if (xml.status === 400) {
-                logerror.innerText = 'Error: verify your data and try again!'
-                logerror.style.color = "red"
-                setTimeout(() => {
-                    logerror.innerText = ''
-                }, 1500)
+                writeError(logerror,"red",'Error: verify your data and try again!',1500)
             } else if (xml.status === 404) {
-                logerror.innerText = 'User not found!'
-                logerror.style.color = "red"
-                setTimeout(() => {
-                    logerror.innerText = ''
-                }, 1500)
+                writeError(logerror,"red",'User not found!',1500)
             } else if (xml.status === 401) {
-                logerror.innerText = 'Invalid username or password!'
-                logerror.style.color = "red"
-                setTimeout(() => {
-                    logerror.innerText = ''
-                }, 1500)
+                writeError(logerror,"red",'Invalid username or password!',1500)
             } else {
-                logerror.innerText = 'Cannot log you in now, try again later!'
-                logerror.style.color = "red"
-                setTimeout(() => {
-                    logerror.innerText = ''
-                }, 1500)
+                writeError(logerror,"red",'Cannot log you in now, try again later!',1500)
             }
         }
     }
@@ -424,24 +379,10 @@ const closeMobileNav = (e) => {
     nav.style.display = 'none'
 }
 
-// const formatTime = (timeStr) => {
-//     // Parse the input time string
-//     const date = new Date(timeStr);
-
-//     return date.toLocaleString('default', {
-//         hour: '2-digit',
-//         minute: '2-digit',
-//         day: '2-digit',
-//         month: '2-digit',
-//         year: 'numeric',
-//     }).replace(',', ' ')
-// }
-
-// document.addEventListener("DOMContentLoaded", () => {
-//     document.querySelectorAll("[data-timestamp]").forEach((element) => {
-//         const time = element.getAttribute("data-timestamp");
-//         if (time) {
-//             element.textContent = formatTime(time);
-//         }
-//     });
-// });
+function writeError(targetDiv,color,errormsg,delay) {
+    targetDiv.innerText = errormsg
+    targetDiv.style.color = color
+    setTimeout(() => {
+        targetDiv.innerText = ''
+    }, delay)
+}
