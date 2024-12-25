@@ -17,12 +17,6 @@ func main() {
 		log.Fatalf("Too many arguments")
 	}
 
-	// Check if running in Docker
-	isDocker := os.Getenv("BASE_PATH") != ""
-	if isDocker {
-		config.BasePath = os.Getenv("BASE_PATH")
-	}
-
 	// Connect to the database
 	db, err := config.Connect()
 	if err != nil {

@@ -16,9 +16,6 @@ RUN go mod download
 # Copy source code
 COPY . .
 
-# Set environment variable for template base path
-ENV BASE_PATH="/app/"
-
 # Build the application
 RUN go build -o forum ./cmd/main.go
 

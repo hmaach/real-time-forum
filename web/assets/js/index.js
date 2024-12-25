@@ -10,7 +10,7 @@ function throttle(fn, delay) {
     return function () {
         const now = +new Date();
         if (now - last > delay) {
-            fn.apply(this, arguments);
+            fn.apply(null, arguments);
             last = now;
         }
     };

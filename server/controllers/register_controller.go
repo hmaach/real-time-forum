@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -53,15 +52,14 @@ func Signup(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 	password := r.FormValue("password")
 	passwordConfirmation := r.FormValue("password-confirmation")
 	email = strings.ToLower(strings.TrimSpace(email))
-	if strings.Contains(username," ") || len(strings.TrimSpace(username)) < 4 || len(password) < 6 || !utils.IsValidEmail(email) || password != passwordConfirmation {
+	if strings.Contains(username, " ") || len(strings.TrimSpace(username)) < 4 || len(password) < 6 || !utils.IsValidEmail(email) || password != passwordConfirmation {
 		w.WriteHeader(400)
 		return
 	}
 
 	_, err := models.StoreUser(db, email, username, password)
 	if err != nil {
-		fmt.Println(err)
-		if err.Error() == "UNIQUE constraint failed: users.username" {
+		if err.Error() == "UNIQUE constraint failed: users.username" || err.Error() == "UNIQUE constraint failed: users.email" {
 			w.WriteHeader(304)
 			return
 		}

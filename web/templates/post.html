@@ -32,10 +32,9 @@
         <div class="comment-add">
             <textarea name="postid" hidden>{{.Data.Post.ID}}</textarea>
             <textarea id="comment-content" name="comment" placeholder="Add a comment..." required></textarea>
-            <button onclick="addcomment('{{.Data.Post.ID}}')">Comment</button>
-            <!-- <span style="color:red" id="errorlogin{{.Data.Post.ID}}"></span> -->
+            <button onclick="addcomment('{{.Data.Post.ID}}')" >Comment</button>
         </div>
-        <h2>Comments: </h2>
+        <h2 style="padding-left: 10px;">Comments: </h2>
         <div class="comments">
             {{range .Data.Comments}}
             <div class="comment">

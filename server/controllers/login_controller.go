@@ -10,6 +10,7 @@ import (
 	"forum/server/models"
 	"forum/server/utils"
 
+	"github.com/gofrs/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -75,24 +76,28 @@ func Signin(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		return
 	}
 
-	sessionID, err := utils.GenerateSessionID()
+	sessionId, err := uuid.NewV7()
 	if err != nil {
-		http.Error(w, "Failed to create session", http.StatusInternalServerError)
+		utils.RenderError(db, w, r, http.StatusInternalServerError, valid, username)
+		log.Println("Failed to create session")
 		return
 	}
+	sessionID := sessionId.String()
 
 	err = models.StoreSession(db, user_id, sessionID, time.Now().Add(10*time.Hour))
 	if err != nil {
-		http.Error(w, "Failed to create session", http.StatusInternalServerError)
+		utils.RenderError(db, w, r, http.StatusInternalServerError, valid, username)
+		log.Println("Failed to create session")
 		return
 	}
 
 	// Set session ID as a cookie
 	http.SetCookie(w, &http.Cookie{
-		Name:    "session_id",
-		Value:   sessionID,
-		Expires: time.Now().Add(10 * time.Hour),
-		Path:    "/",
+		Name:     "session_id",
+		Value:    sessionID,
+		Expires:  time.Now().Add(10 * time.Hour),
+		HttpOnly: true,
+		Path:     "/",
 	})
 	http.Redirect(w, r, "/", http.StatusFound)
 }
@@ -109,10 +114,17 @@ func Logout(w http.ResponseWriter, r *http.Request, db *sql.DB) {
 		// Use the new model function
 		err := models.DeleteUserSession(db, userID)
 		if err != nil {
-			http.Error(w, "Error while logging out!", http.StatusInternalServerError)
+			utils.RenderError(db, w, r, http.StatusInternalServerError, valid, username)
+			log.Println("Error while logging out!")
 			return
 		}
-
+		http.SetCookie(w, &http.Cookie{
+			Name:     "session_id",
+			Value:    "",
+			Expires:  time.Now(),
+			HttpOnly: true,
+			Path:     "/",
+		})
 		w.Header().Set("Content-Type", "text/html")
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
