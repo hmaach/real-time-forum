@@ -47,6 +47,7 @@ forum/
 │   └── templates/        # HTML templates
 ├── dockerfile            # Docker containerization
 ├── commands.sh           # Docker build and deployment script
+├── prune.sh              # remove unused objects
 ├── go.mod                # Go module dependencies
 ├── go.sum                # Dependency checksum
 └── README.md             # Project documentation
