@@ -24,7 +24,7 @@ func main() {
 	}
 	defer db.Close()
 
-	err = config.CreateTables(db)
+	err = config.CreateDemoData(db)
 	if err != nil {
 		log.Printf("Error creating the database schema: %v\n", err)
 	}
