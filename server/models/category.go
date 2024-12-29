@@ -1,7 +1,6 @@
 package models
 
 import (
-	"database/sql"
 	"fmt"
 	"strings"
 )
@@ -12,7 +11,7 @@ type Category struct {
 	PostsCount int
 }
 
-func FetchCategories(db *sql.DB) ([]Category, error) {
+func FetchCategories() ([]Category, error) {
 	var categories []Category
 	query := `
 		SELECT
@@ -29,7 +28,7 @@ func FetchCategories(db *sql.DB) ([]Category, error) {
 		FROM categories c
 		ORDER BY posts_count DESC;
 	`
-	rows, err := db.Query(query)
+	rows, err := DB.Query(query)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +41,7 @@ func FetchCategories(db *sql.DB) ([]Category, error) {
 	return categories, nil
 }
 
-func CheckCategories(db *sql.DB, ids []int) error {
+func CheckCategories(ids []int) error {
 	placeholders := strings.Repeat("?,", len(ids))
 	placeholders = placeholders[:len(placeholders)-1]
 
@@ -57,7 +56,7 @@ func CheckCategories(db *sql.DB, ids []int) error {
 		args[i] = id
 	}
 
-	rows, err := db.Query(query, args...)
+	rows, err := DB.Query(query, args...)
 	if err != nil {
 		return err
 	}
