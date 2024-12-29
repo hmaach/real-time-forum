@@ -3,328 +3,132 @@ package controllers
 import (
 	"database/sql"
 	"encoding/json"
-	"html"
+	"errors"
 	"log"
 	"net/http"
-	"strconv"
-	"strings"
 
 	"forum/server/models"
 	"forum/server/utils"
+	"forum/server/validators"
 )
 
-func IndexPosts(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	_, username, valid := models.ValidSession(r, db)
+func IndexPosts(w http.ResponseWriter, r *http.Request) {
+	status, message, actionType, categoryID, page := validators.IndexPostsRequest(r)
+	if status != http.StatusOK {
+		utils.ErrorJSONResponse(w, status, message)
+		return
+	}
+	// userID := 11
 
-	if r.Method != http.MethodGet {
-		utils.RenderError(db, w, r, http.StatusMethodNotAllowed, valid, username)
-		return
+	var (
+		posts []models.Post
+		err   error
+	)
+	page *= 10
+
+	switch actionType {
+	case "index":
+		posts, err = models.FetchPosts(page)
+	case "category":
+		posts, err = models.FetchPostsByCategory(categoryID, page)
+		// case "created":
+		// 	posts, err = models.FetchCreatedPostsByUser(userID)
+		// case "liked":
+		// 	posts, err = models.FetchLikedPostsByUser(userID)
 	}
-	if r.URL.Path != "/" {
-		utils.RenderError(db, w, r, http.StatusNotFound, valid, username)
-		return
-	}
-	id := r.FormValue("PageID")
-	page, er := strconv.Atoi(id)
-	if er != nil && id != "" {
-		utils.RenderError(db, w, r, http.StatusBadRequest, valid, username)
-		return
-	}
-	page = (page - 1) * 10
-	if page < 0 {
-		page = 0
-	}
-	posts, statusCode, err := models.FetchPosts(db, page)
+
 	if err != nil {
-		log.Println("Error fetching posts:", err)
-		utils.RenderError(db, w, r, statusCode, valid, username)
-		return
-	}
-	if posts == nil && page > 0 {
-		utils.RenderError(db, w, r, http.StatusBadRequest, valid, username)
+		utils.ErrorJSONResponse(w, http.StatusInternalServerError, "Internal Server Error")
 		return
 	}
 
-	if err := utils.RenderTemplate(db, w, r, "home", statusCode, posts, valid, username); err != nil {
-		log.Println("Error rendering template:", err)
-		utils.RenderError(db, w, r, http.StatusInternalServerError, valid, username)
-		return
-	}
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(posts)
 }
 
-func IndexPostsByCategory(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	_, username, valid := models.ValidSession(r, db)
-
-	if r.Method != http.MethodGet {
-		utils.RenderError(db, w, r, http.StatusMethodNotAllowed, valid, username)
+func ShowPost(w http.ResponseWriter, r *http.Request) {
+	// Validate the request and extract the post ID
+	status, message, postID := validators.ShowPostRequest(r)
+	if status != http.StatusOK {
+		utils.ErrorJSONResponse(w, status, message)
 		return
 	}
 
-	id, err := strconv.Atoi(r.PathValue("id"))
+	post, err := models.FetchPost(postID)
 	if err != nil {
-		utils.RenderError(db, w, r, http.StatusBadRequest, valid, username)
+		if errors.Is(err, sql.ErrNoRows) {
+			utils.ErrorJSONResponse(w, http.StatusNotFound, "Post not found")
+		} else {
+			log.Printf("Error fetching post with ID %d: %v", postID, err)
+			utils.ErrorJSONResponse(w, http.StatusInternalServerError, "Internal Server Error")
+		}
 		return
 	}
 
-	if e := models.CheckCategories(db, []int{id}); e != nil {
-		utils.RenderError(db, w, r, 404, valid, username)
-		return
-	}
-
-	pid := r.FormValue("PageID")
-	page, _ := strconv.Atoi(pid)
-	page = (page - 1) * 10
-	if page < 0 {
-		page = 0
-	}
-
-	posts, statusCode, err := models.FetchPostsByCategory(db, id, page)
-	if err != nil {
-		log.Println("Error fetching posts:", err)
-		utils.RenderError(db, w, r, statusCode, valid, username)
-		return
-	}
-
-	if posts == nil && page > 0 {
-		utils.RenderError(db, w, r, 404, valid, username)
-		return
-	}
-
-	if err := utils.RenderTemplate(db, w, r, "home", statusCode, posts, valid, username); err != nil {
-		log.Println("Error rendering template:", err)
-		utils.RenderError(db, w, r, http.StatusInternalServerError, valid, username)
-		return
-	}
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(post)
 }
 
-func ShowPost(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	_, username, valid := models.ValidSession(r, db)
-
-	if r.Method != http.MethodGet {
-		utils.RenderError(db, w, r, http.StatusMethodNotAllowed, valid, username)
+func CreatePost(w http.ResponseWriter, r *http.Request) {
+	status, _, title, content, categories := validators.CreatePostRequest(r)
+	if status != http.StatusOK {
+		w.WriteHeader(status)
 		return
 	}
 
-	postID, err := strconv.Atoi(r.PathValue("id"))
+	user_id, _, valid := models.ValidSession(r)
+	if !valid {
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	err := models.CheckCategories(categories)
 	if err != nil {
-		utils.RenderError(db, w, r, http.StatusBadRequest, valid, username)
-		return
-	}
-	post, statusCode, err := models.FetchPost(db, postID)
-	if err != nil {
-		log.Println("Error fetching posts from the database:", err)
-		utils.RenderError(db, w, r, statusCode, valid, username)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
-	err = utils.RenderTemplate(db, w, r, "post", statusCode, post, valid, username)
+	post_id, err := models.StorePost(user_id, title, content)
 	if err != nil {
 		log.Println(err)
-		utils.RenderError(db, w, r, http.StatusInternalServerError, valid, username)
-	}
-}
-
-func GetPostCreationForm(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	_, username, valid := models.ValidSession(r, db)
-
-	if r.Method != http.MethodGet {
-		utils.RenderError(db, w, r, http.StatusMethodNotAllowed, valid, username)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
-	if !valid {
-		http.Redirect(w, r, "/login", http.StatusFound)
-		return
-	}
-
-	if err := utils.RenderTemplate(db, w, r, "post-form", http.StatusOK, nil, valid, username); err != nil {
-		log.Println("Error rendering template:", err)
-		utils.RenderError(db, w, r, http.StatusInternalServerError, valid, username)
-		return
-	}
-}
-
-func CreatePost(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	user_id, username, valid := models.ValidSession(r, db)
-
-	if r.Method != http.MethodPost {
-		utils.RenderError(db, w, r, http.StatusMethodNotAllowed, valid, username)
-		return
-	}
-	if !valid {
-		w.WriteHeader(401)
-		return
-	}
-
-	if err := r.ParseForm(); err != nil {
-		w.WriteHeader(400)
-		return
-	}
-
-	title := r.FormValue("title")
-	content := r.FormValue("content")
-	catids := r.Form["categories"]
-
-	catids = strings.Split(catids[0], ",")
-
-	title = html.EscapeString(title)
-	content = html.EscapeString(content)
-
-	if catids == nil || strings.TrimSpace(title) == "" || strings.TrimSpace(content) == "" {
-		w.WriteHeader(400)
-		return
-	}
-
-	var catidsInt []int
-	for i := range catids {
-		id, e := strconv.Atoi(catids[i])
-		if e != nil {
-			w.WriteHeader(400)
-			return
-		}
-		catidsInt = append(catidsInt, id)
-	}
-
-	err := models.CheckCategories(db, catidsInt)
-	if err != nil {
-		w.WriteHeader(400)
-		return
-	}
-
-	pid, err := models.StorePost(db, user_id, title, content)
-	if err != nil {
-		w.WriteHeader(400)
-		return
-	}
-
-	for i := 0; i < len(catidsInt); i++ {
-
-		_, err = models.StorePostCategory(db, pid, catidsInt[i])
+	for _, category := range categories {
+		_, err = models.StorePostCategory(post_id, category)
 		if err != nil {
-			w.WriteHeader(400)
+			log.Println(err)
+			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 	}
 
-	w.Header().Set("Content-Type", "text/html")
 	w.WriteHeader(200)
 }
 
-func MyCreatedPosts(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	user_id, username, valid := models.ValidSession(r, db)
-
-	if r.Method != http.MethodGet {
-		utils.RenderError(db, w, r, http.StatusMethodNotAllowed, valid, username)
+func ReactToPost(w http.ResponseWriter, r *http.Request) {
+	status, _, post_id, reactionType := validators.ReactRequest(r)
+	if status != http.StatusOK {
+		w.WriteHeader(status)
 		return
 	}
 
+	user_id, _, valid := models.ValidSession(r)
 	if !valid {
-		http.Redirect(w, r, "/login", http.StatusFound)
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	id := r.FormValue("PageID")
-	page, er := strconv.Atoi(id)
-	if er != nil && id != "" {
-		utils.RenderError(db, w, r, http.StatusBadRequest, valid, username)
-		return
-	}
-	page = (page - 1) * 10
-	if page < 0 {
-		page = 0
-	}
-	posts, statusCode, err := models.FetchCreatedPostsByUser(db, user_id, page)
+	likeCount, dislikeCount, err := models.ReactToPost(user_id, post_id, reactionType)
 	if err != nil {
-		log.Println("Error fetching posts:", err)
-		utils.RenderError(db, w, r, statusCode, valid, username)
-		return
-	}
-	if posts == nil && page > 0 {
-		utils.RenderError(db, w, r, http.StatusBadRequest, valid, username)
+		log.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	if err := utils.RenderTemplate(db, w, r, "home", statusCode, posts, valid, username); err != nil {
-		log.Println("Error rendering template:", err)
-		utils.RenderError(db, w, r, http.StatusInternalServerError, valid, username)
-		return
-	}
-}
-
-func MyLikedPosts(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	user_id, username, valid := models.ValidSession(r, db)
-
-	if r.Method != http.MethodGet {
-		utils.RenderError(db, w, r, http.StatusNotFound, valid, username)
-		return
-	}
-
-	if !valid {
-		http.Redirect(w, r, "/login", http.StatusFound)
-		return
-	}
-
-	id := r.FormValue("PageID")
-	page, er := strconv.Atoi(id)
-	if er != nil && id != "" {
-		utils.RenderError(db, w, r, http.StatusBadRequest, valid, username)
-		return
-	}
-	page = (page - 1) * 10
-	if page < 0 {
-		page = 0
-	}
-	posts, statusCode, err := models.FetchLikedPostsByUser(db, user_id, page)
-	if err != nil {
-		log.Println("Error fetching posts:", err)
-		utils.RenderError(db, w, r, statusCode, valid, username)
-		return
-	}
-	if posts == nil && page > 0 {
-		utils.RenderError(db, w, r, 404, valid, username)
-		return
-	}
-
-	if err := utils.RenderTemplate(db, w, r, "home", statusCode, posts, valid, username); err != nil {
-		log.Println("Error rendering template:", err)
-		utils.RenderError(db, w, r, http.StatusInternalServerError, valid, username)
-		return
-	}
-}
-
-func ReactToPost(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	if r.Method != http.MethodPost {
-		utils.RenderError(db, w, r, http.StatusMethodNotAllowed, false, "")
-		return
-	}
-
-	var user_id int
-	var valid bool
-
-	if user_id, _, valid = models.ValidSession(r, db); !valid {
-		w.WriteHeader(401)
-		return
-	}
-
-	if err := r.ParseForm(); err != nil {
-		w.WriteHeader(400)
-		return
-	}
-
-	userReaction := r.FormValue("reaction")
-	id := r.FormValue("post_id")
-	post_id, err := strconv.Atoi(id)
-	if err != nil {
-		w.WriteHeader(400)
-		return
-	}
-	likeCount, dislikeCount, err := models.ReactToPost(db, user_id, post_id, userReaction)
-	if err != nil {
-		w.WriteHeader(500)
-		return
-	}
-
-	// Return the new count as JSON
+	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]int{"likesCount": likeCount, "dislikesCount": dislikeCount})
 }

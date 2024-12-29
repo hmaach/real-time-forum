@@ -4,35 +4,43 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"text/template"
 
+	"forum/server/api"
 	"forum/server/config"
-	"forum/server/routes"
+	"forum/server/models"
 
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func main() {
-	// check args
-	if len(os.Args) != 1 {
-		log.Fatalf("Too many arguments")
+func init() {
+	// Parse the HTML index file
+	_, err := template.ParseFiles(config.BasePath + "web/index.html")
+	if err != nil {
+		log.Fatal("Failed to parse index.html:", err)
 	}
 
 	// Connect to the database
-	db, err := config.Connect()
+	err = models.Connect()
 	if err != nil {
-		log.Println("Database connection error:", err)
+		log.Panic("Database connection error:", err)
 	}
-	defer db.Close()
+	// err = models.CreateDemoData()
+	// if err != nil {
+	// 	log.Fatal("error creating demo data:", err)
+	// }
+}
 
-	err = config.CreateDemoData(db)
-	if err != nil {
-		log.Printf("Error creating the database schema: %v\n", err)
+func main() {
+	// check args
+	if len(os.Args) != 1 {
+		log.Fatal("Too many arguments")
 	}
 
 	// Start the HTTP server
 	server := http.Server{
 		Addr:    ":8080",
-		Handler: routes.Routes(db),
+		Handler: api.Routes(),
 	}
 
 	log.Println("Server starting on http://localhost:8080")

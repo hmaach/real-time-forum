@@ -1,111 +1,57 @@
 package controllers
 
 import (
-	"database/sql"
 	"encoding/json"
-	"html"
 	"net/http"
-	"strconv"
-	"strings"
 
 	"forum/server/models"
-	"forum/server/utils"
+	"forum/server/validators"
 )
 
-func CreateComment(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	// Validate session
-	userID, username, valid := models.ValidSession(r, db)
-
-	// Validate method
-	if r.Method != http.MethodPost {
-		utils.RenderError(db, w, r, http.StatusMethodNotAllowed, valid, username)
+func CreateComment(w http.ResponseWriter, r *http.Request) {
+	statusCode, _, content, postID := validators.CreateCommentRequest(r)
+	if statusCode != http.StatusOK {
+		w.WriteHeader(statusCode)
 		return
 	}
 
+	// Validate session
+	userID, _, valid := models.ValidSession(r)
 	if !valid {
 		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	// Parse form data
-	if err := r.ParseForm(); err != nil {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	content := html.EscapeString(strings.TrimSpace(r.FormValue("comment")))
-	postIDStr := r.FormValue("postid")
-	postID, err := strconv.Atoi(postIDStr)
-
-	if err != nil || strings.TrimSpace(content) == "" || len(strings.TrimSpace(content)) > 500 {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
 	// Store the comment using the models package
-	commentID, err := models.StoreComment(db, userID, postID, content)
+	_, err := models.StoreComment(userID, postID, content)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	// Fetch additional details using the models package
-	commentsCount, err := models.CountCommentsByPostID(db, postID)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	commentTime, err := models.FetchCommentTimeByID(db, commentID)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		return
-	}
-
-	// Return the new comment details as JSON
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"ID":            commentID,
-		"username":      username,
-		"created_at":    commentTime,
-		"content":       content,
-		"likes":         0,
-		"dislikes":      0,
-		"commentscount": commentsCount,
-	})
+	w.WriteHeader(http.StatusOK)
 }
 
-func ReactToComment(w http.ResponseWriter, r *http.Request, db *sql.DB) {
-	user_id, username, valid := models.ValidSession(r, db)
-
-	if r.Method != http.MethodPost {
-		utils.RenderError(db, w, r, http.StatusMethodNotAllowed, valid, username)
+func ReactToComment(w http.ResponseWriter, r *http.Request) {
+	status, _, comment_id, reactionType := validators.ReactRequest(r)
+	if status != http.StatusOK {
+		w.WriteHeader(status)
 		return
 	}
 
+	user_id, _, valid := models.ValidSession(r)
 	if !valid {
-		w.WriteHeader(401)
+		w.WriteHeader(http.StatusUnauthorized)
 		return
 	}
 
-	if err := r.ParseForm(); err != nil {
-		w.WriteHeader(400)
+	likeCount, dislikeCount, err := models.ReactToComment(user_id, comment_id, reactionType)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
-	userReaction := r.FormValue("reaction")
-	id := r.FormValue("comment_id")
-	comment_id, err := strconv.Atoi(id)
-	if err != nil {
-		w.WriteHeader(400)
-		return
-	}
-	likeCount, dislikeCount, err := models.ReactToComment(db, user_id, comment_id, userReaction)
-	if err != nil {
-		w.WriteHeader(500)
-		return
-	}
-	// Return the new count as JSON
+	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(map[string]int{"commentlikesCount": likeCount, "commentdislikesCount": dislikeCount})
 }

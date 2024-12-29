@@ -36,7 +36,7 @@ func RegisterRequest(r *http.Request) (int, string, string, string, string) {
 	if email == "" {
 		return http.StatusBadRequest, "Email is required", "", "", ""
 	}
-	if !strings.Contains(email, "@") || !strings.Contains(email, ".") || len(email) < 5 {
+	if !utils.IsValidEmail(email) {
 		return http.StatusBadRequest, "Invalid email format", "", "", ""
 	}
 

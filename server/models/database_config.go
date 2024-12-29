@@ -13,8 +13,8 @@ import (
 var (
 	database     = "sqlite3"
 	databasePath = config.BasePath + "server/database/database.db"
-	schemaPath   = config.BasePath + "server/database/sql/schema.sql"
-	seedPath     = config.BasePath + "server/database/sql/seed.sql"
+	schemaPath   = config.BasePath + "server/database/schema.sql"
+	seedPath     = config.BasePath + "server/database/seed.sql"
 	DB           *sql.DB
 )
 

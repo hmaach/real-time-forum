@@ -26,9 +26,8 @@ type PostDetail struct {
 	Comments []Comment
 }
 
-func FetchPosts() ([]Post, int, error) {
+func FetchPosts(page int) ([]Post, error) {
 	var posts []Post
-	currentPage := 0
 	// Query to fetch posts
 	query := `SELECT
 		p.id,
@@ -79,10 +78,10 @@ func FetchPosts() ([]Post, int, error) {
 		p.created_at DESC
 	LIMIT 10 OFFSET ? ;
 	`
-	rows, err := DB.Query(query, currentPage)
+	rows, err := DB.Query(query, page)
 	if err != nil {
 		log.Println("Error executing query:", err)
-		return nil, 500, err
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -102,27 +101,18 @@ func FetchPosts() ([]Post, int, error) {
 			&post.CategoriesStr)
 		if err != nil {
 			log.Println("Error scanning row:", err)
-			return nil, 500, err
+			return nil, err
 		}
 		// it came from the  database as "technology,sports...", so we need to split it
 		post.Categories = strings.Split(post.CategoriesStr, ",")
 
-		// Format the created_at field to a more readable format
-		// post.CreatedAt = utils.FormatTime(post.CreatedAt)
 		// Append the Post struct to the posts slice
 		posts = append(posts, post)
 	}
-
-	// Check for errors during iteration
-	if err = rows.Err(); err != nil {
-		log.Println("Error iterating rows:", err)
-		return nil, 500, err
-	}
-
-	return posts, 200, nil
+	return posts, nil
 }
 
-func FetchPost(postID int) (PostDetail, int, error) {
+func FetchPost(postID int) (PostDetail, error) {
 	var post Post
 	post.ID = postID
 
@@ -177,10 +167,10 @@ func FetchPost(postID int) (PostDetail, int, error) {
 		&post.CategoriesStr)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return PostDetail{}, 404, fmt.Errorf("post not found: %w", err)
+			return PostDetail{}, err
 		}
 		log.Println("Error scanning row:", err)
-		return PostDetail{}, 500, err
+		return PostDetail{}, err
 	}
 
 	// Process categories
@@ -196,12 +186,11 @@ func FetchPost(postID int) (PostDetail, int, error) {
 	return PostDetail{
 		Post:     post,
 		Comments: comments,
-	}, 200, nil
+	}, nil
 }
 
-func FetchPostsByCategory(categoryID int) ([]Post, error) {
+func FetchPostsByCategory(categoryID, page int) ([]Post, error) {
 	var posts []Post
-	currentPage := 0
 	query := `
 		SELECT
 			p.id,
@@ -254,7 +243,7 @@ func FetchPostsByCategory(categoryID int) ([]Post, error) {
 			p.created_at
 		LIMIT 10 OFFSET ? ;
 	`
-	rows, err := DB.Query(query, categoryID, currentPage)
+	rows, err := DB.Query(query, categoryID, page)
 	if err != nil {
 		log.Println("Error executing query:", err)
 		return nil, err
