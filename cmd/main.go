@@ -27,16 +27,17 @@ func init() {
 		log.Fatalf("error creating demo data: %v", err)
 	}
 
-	if err := models.CreateDemoData(); err != nil {
-		log.Fatalf("error creating demo data: %v", err)
-	}
+	// if err := models.CreateDemoData(); err != nil {
+	// 	log.Fatalf("error creating demo data: %v", err)
+	// }
 }
 
 func routes() http.Handler {
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("/", controllers.Index)
-	mux.HandleFunc("/assets/", controllers.ServeStaticFiles)
+	mux.HandleFunc("/api/", controllers.ServeAvailableRoutes)
+	mux.HandleFunc("/api/assets/", controllers.ServeStaticFiles)
 	mux.HandleFunc("/api/register", controllers.Register)
 	mux.HandleFunc("/api/login", controllers.Login)
 
@@ -54,7 +55,7 @@ func routes() http.Handler {
 	// WebSocket endpoint
 	mux.HandleFunc("/ws", middlewares.IsAuth(controllers.HandleWebSocket))
 
-	rateLimiter := middlewares.NewRateLimiter(15, 1*time.Minute)
+	rateLimiter := middlewares.NewRateLimiter(1500, 1*time.Minute)
 
 	return middlewares.Recovery(rateLimiter.Middleware(mux))
 }
